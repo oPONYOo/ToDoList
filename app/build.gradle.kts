@@ -114,16 +114,6 @@ dependencies {
     implementation("com.trello.rxlifecycle2:rxlifecycle-android:2.2.2") // 오픈소스라이선스 출처등록 해야함
     implementation("com.trello.rxlifecycle2:rxlifecycle-components:2.2.2") // 오픈소스라이선스 출처등록 해야함
 
-    // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:28.1.0"))
-    implementation("com.google.firebase:firebase-analytics-ktx")
-    implementation("com.google.firebase:firebase-crashlytics-ktx")
-    implementation("com.google.firebase:firebase-messaging-ktx")
-
-    //ExoPlayer
-    implementation("com.google.android.exoplayer:exoplayer-core:2.16.1") // 오픈소스라이선스 출처등록 O
-    implementation("com.google.android.exoplayer:exoplayer-dash:2.16.1") // 오픈소스라이선스 출처등록 O
-    implementation("com.google.android.exoplayer:exoplayer-ui:2.16.1") // 오픈소스라이선스 출처등록 O
 
     // Hilt dependencies
     implementation("com.google.dagger:hilt-android:2.40.5") // 오픈소스라이선스 출처등록 O
@@ -200,8 +190,12 @@ dependencies {
 
     // When using a AppCompat theme
     implementation("com.google.accompanist:accompanist-appcompat-theme:0.16.0")
+
+    implementation ("com.google.accompanist:accompanist-insets:0.24.1-alpha")
+    // If using insets-ui
+    implementation ("com.google.accompanist:accompanist-insets-ui:0.24.1-alpha")
+
 }
 
-apply(mapOf("plugin" to "com.google.gms.google-services"))
 apply(mapOf("plugin" to "com.google.firebase.crashlytics"))
 apply(mapOf("plugin" to "dagger.hilt.android.plugin"))
