@@ -58,10 +58,10 @@ fun ToDoTabBar(
                 contentDescription = stringResource(id = R.string.cd_menu)
             )
             Spacer(Modifier.width(8.dp))
-            Image(
+      /*      Image(
                 painter = painterResource(id = R.drawable.ic_previous_arrow),
                 contentDescription = null
-            )
+            )*/
         }
         children(
             Modifier

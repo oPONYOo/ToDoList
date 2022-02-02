@@ -195,6 +195,7 @@ dependencies {
     // If using insets-ui
     implementation ("com.google.accompanist:accompanist-insets-ui:0.24.1-alpha")
 
+
 }
 
 apply(mapOf("plugin" to "com.google.firebase.crashlytics"))

@@ -9,6 +9,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.*
 import androidx.compose.animation.splineBasedDecay
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -22,37 +23,38 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusRequester.Companion.createRefs
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.consumePositionChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.input.pointer.util.VelocityTracker
-import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.example.todolist.data.TodoThingsModel
+import androidx.constraintlayout.widget.ConstraintLayout
+import com.example.todolist.data.ToDoViewModel
 import com.example.todolist.ui.LandingScreen
 import com.example.todolist.ui.ToDoTabBar
 import com.example.todolist.ui.ToDoTabs
 import com.example.todolist.ui.theme.ToDoListTheme
 import com.example.todolist.ui.theme.gray1
-import com.example.todolist.ui.theme.lime
 import com.google.accompanist.insets.statusBarsPadding
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.todolist.ui.theme.lime
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -89,7 +91,8 @@ fun MainScreen() {
             if (it == SplashState.Shown) 0f else 1f
         }
         val contentTopPadding by transition.animateDp(
-            transitionSpec = { spring(stiffness = Spring.StiffnessLow) }, label = "contentTopPadding"
+            transitionSpec = { spring(stiffness = Spring.StiffnessLow) },
+            label = "contentTopPadding"
         ) {
             if (it == SplashState.Shown) 100.dp else 0.dp
         }
@@ -154,7 +157,11 @@ enum class ToDoScreen {
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
-private fun CardContent( openDrawer: () -> Unit, modifier: Modifier = Modifier) {
+private fun CardContent(
+    openDrawer: () -> Unit,
+    modifier: Modifier = Modifier,
+//    viewModel: ToDoViewModel= viewModel()
+) {
 
     var tabSelected by remember { mutableStateOf(ToDoScreen.TODO) }
     BackdropScaffold(
@@ -165,18 +172,13 @@ private fun CardContent( openDrawer: () -> Unit, modifier: Modifier = Modifier) 
             HomeTabBar(openDrawer, tabSelected, onTabSelected = { tabSelected = it })
         },
         backLayerContent = {
-//            SearchContent(
-//                tabSelected,
-//                viewModel,
-//                onPeopleChanged,
-//                onDateSelectionClicked,
-//                onExploreItemClicked
-//            )
+            EditToDo()
         },
         frontLayerContent = {
+            Image(painterResource(id = R.drawable.ic_baseline_horizontal_rule_24), contentDescription = null, modifier = Modifier.fillMaxWidth())
             when (tabSelected) {
                 ToDoScreen.TODO -> {
-                    val names: List<String> = List(10) { "compose 개념 공부" }
+                    val names: List<String> = List(10) { "compose" }
                     LazyColumn(modifier = Modifier.padding(vertical = 4.dp)) {
                         items(items = names) { name ->
                             TodoList(name)
@@ -220,9 +222,11 @@ private fun TodoList(name: String) {
                 selectAll = checked
             }
         )
-        Column (modifier = Modifier
-            .weight(1f)
-            .padding(12.dp)){
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(12.dp)
+        ) {
             Text(
                 modifier = Modifier,
                 text = name,
@@ -237,7 +241,7 @@ private fun TodoList(name: String) {
                 )
             }
         }
-        IconButton(onClick = { expanded = !expanded}, modifier = Modifier.padding(0.dp, 5.dp)) {
+        IconButton(onClick = { expanded = !expanded }, modifier = Modifier.padding(0.dp, 5.dp)) {
             Icon(
                 imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
                 contentDescription = if (expanded) {
@@ -250,6 +254,78 @@ private fun TodoList(name: String) {
         }
     }
 }
+
+@Composable
+fun EditToDo() {
+    var text by remember { mutableStateOf("Hello") }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(10.dp, 20.dp, 10.dp, 0.dp)
+            .background(Color.White, RoundedCornerShape(16.dp))
+    ) {
+        TextField(
+            value = text,
+            onValueChange = { text = it },
+            modifier = Modifier.fillMaxWidth(),
+            textStyle = MaterialTheme.typography.h6,
+            placeholder = {
+                Text(
+                    text = "제목",
+                    style = MaterialTheme.typography.h6,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.LightGray
+                )
+            },
+            colors = TextFieldDefaults.textFieldColors(
+                cursorColor = Color.LightGray,
+                backgroundColor = Color.White,
+                focusedIndicatorColor = Color.LightGray,
+                unfocusedIndicatorColor = Color.Transparent
+            ),
+
+            maxLines = 2
+
+        )
+
+    }
+
+    Divider(
+        modifier = Modifier
+            .padding(10.dp, 0.dp, 10.dp, 0.dp)
+            .height(0.5.dp),
+        color = Color.LightGray
+    )
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(10.dp, 0.dp, 10.dp, 10.dp)
+            .background(Color.White, RoundedCornerShape(16.dp))
+    ) {
+        TextField(
+            value = text,
+            onValueChange = { text = it },
+            modifier = Modifier.fillMaxWidth().fillMaxHeight(),
+            textStyle = MaterialTheme.typography.body1,
+            placeholder = {
+                Text(
+                    text = "내용",
+                    style = MaterialTheme.typography.body1,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color.LightGray
+                )
+            },
+            colors = TextFieldDefaults.textFieldColors(
+                cursorColor = Color.LightGray,
+                backgroundColor = Color.White,
+                focusedIndicatorColor = Color.LightGray,
+                unfocusedIndicatorColor = Color.Transparent
+            ),
+
+            )
+    }
+}
+
 
 @Composable
 private fun HomeTabBar(

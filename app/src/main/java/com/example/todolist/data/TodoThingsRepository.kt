@@ -7,4 +7,10 @@ class TodoThingsRepository @Inject constructor(
 ) {
     val todoThings: List<TodoThingsModel> = todoThingsLocalDataSource.todoThings
 
+    fun getToDoThings(mainTxt: String): TodoThingsModel? {
+        return todoThingsLocalDataSource.todoThings.firstOrNull {
+            it.mainTodo == mainTxt
+        }
+    }
+
 }
