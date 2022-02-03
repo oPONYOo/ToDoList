@@ -9,4 +9,13 @@
     <string name="click_label_select">select</string>
     <string name="state_descr_selected">Selected</string>
     <string name="state_descr_not_selected">Not selected</string>
+
+    <string-array name="tasks">
+        <item>Buy milk</item>
+        <item>Choose curtain</item>
+        <item>Plant rosemary</item>
+        <item>Finish the essay</item>
+        <item>Receive new packages</item>
+        <item>Take a photo</item>
+    </string-array>
 </resources>

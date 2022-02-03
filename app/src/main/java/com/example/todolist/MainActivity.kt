@@ -13,16 +13,19 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.horizontalDrag
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.alpha
@@ -33,6 +36,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
@@ -53,6 +57,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.todolist.data.Todo
 import com.example.todolist.ui.theme.lime
 
 
@@ -144,7 +149,7 @@ fun home(
         CardContent(
             openDrawer = {
                 scope.launch {
-                    scaffoldState.drawerState.open()
+                    scaffoldState.drawerState.isClosed
                 }
             }
         )
@@ -162,16 +167,18 @@ private fun CardContent(
     modifier: Modifier = Modifier,
 //    viewModel: ToDoViewModel= viewModel()
 ) {
-
+    val allTasks = stringArrayResource(R.array.tasks)
+    val tasks = remember { mutableStateListOf(*allTasks) }
     var tabSelected by remember { mutableStateOf(ToDoScreen.TODO) }
     BackdropScaffold(
         modifier = modifier,
-        scaffoldState = rememberBackdropScaffoldState(BackdropValue.Revealed),
+        scaffoldState = rememberBackdropScaffoldState(BackdropValue.Concealed),
         frontLayerScrimColor = Color.Unspecified,
         appBar = {
             HomeTabBar(openDrawer, tabSelected, onTabSelected = { tabSelected = it })
         },
         backLayerContent = {
+
             EditToDo()
         },
         frontLayerContent = {
@@ -180,9 +187,19 @@ private fun CardContent(
                 ToDoScreen.TODO -> {
                     val names: List<String> = List(10) { "compose" }
                     LazyColumn(modifier = Modifier.padding(vertical = 4.dp)) {
-                        items(items = names) { name ->
-                            TodoList(name)
+                        items(count = tasks.size) { i ->
+                            val task = tasks.getOrNull(i)
+                            if (task != null) {
+                                key(task) {
+                                    TodoList(
+                                        task = task,
+                                        onRemove = { tasks.remove(task) }
+                                    )
+                                }
+                            }
+
                         }
+
                     }
                 }
                 ToDoScreen.Sleep -> {
@@ -199,60 +216,70 @@ private fun CardContent(
 }
 
 @Composable
-private fun TodoList(name: String) {
+private fun TodoList(task: String, onRemove: () -> Unit) {
     var expanded by remember { mutableStateOf(false) }
-
-    Row(
+    Surface(
         modifier = Modifier
-            .padding(10.dp)
-            .animateContentSize(
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
-                )
-            )
-            .border(BorderStroke(2.dp, gray1), RoundedCornerShape(16.dp))
-            .background(Color.White, RoundedCornerShape(16.dp))
-    ) {
-        var selectAll by remember { mutableStateOf(false) }
-        Checkbox(
-            modifier = Modifier.padding(0.dp, 7.dp),
-            checked = selectAll,
-            onCheckedChange = { checked ->
-                selectAll = checked
+//            .swipeToDismiss(onRemove)
+            .pointerInput(Unit) {
+                detectTapGestures(onDoubleTap = { onRemove()})
             }
-        )
-        Column(
+    ){
+        Row(
             modifier = Modifier
-                .weight(1f)
-                .padding(12.dp)
-        ) {
-            Text(
-                modifier = Modifier,
-                text = name,
-                style = MaterialTheme.typography.h5.copy(
-                    fontWeight = FontWeight.Medium
+                .padding(10.dp)
+                .animateContentSize(
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessLow
+                    )
                 )
+                .border(BorderStroke(2.dp, gray1), RoundedCornerShape(16.dp))
+                .background(Color.White, RoundedCornerShape(16.dp))
+        ) {
+            var selectAll by remember { mutableStateOf(false) }
+            Checkbox(
+                modifier = Modifier.padding(0.dp, 7.dp),
+                checked = selectAll,
+                onCheckedChange = { checked ->
+                    selectAll = checked
+                },
+                colors = CheckboxDefaults.colors(checkedColor = Color.LightGray, checkmarkColor = Color.Gray, uncheckedColor = gray1)
             )
-            if (expanded) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(12.dp)
+
+            ) {
                 Text(
-                    text = ("Composem ipsum color sit lazy, " +
-                            "padding theme elit, sed do bouncy. ").repeat(4),
+                    modifier = Modifier,
+                    text = task,
+                    style = MaterialTheme.typography.h5.copy(
+                        fontWeight = FontWeight.Medium
+                    )
+                )
+                if (expanded) {
+                    Text(
+                        text = ("Composem ipsum color sit lazy, " +
+                                "padding theme elit, sed do bouncy. ").repeat(4),
+                    )
+                }
+            }
+            IconButton(onClick = { expanded = !expanded }, modifier = Modifier.padding(0.dp, 5.dp)) {
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                    contentDescription = if (expanded) {
+                        stringResource(R.string.show_less)
+                    } else {
+                        stringResource(R.string.show_more)
+                    }
+
                 )
             }
-        }
-        IconButton(onClick = { expanded = !expanded }, modifier = Modifier.padding(0.dp, 5.dp)) {
-            Icon(
-                imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                contentDescription = if (expanded) {
-                    stringResource(R.string.show_less)
-                } else {
-                    stringResource(R.string.show_more)
-                }
-
-            )
         }
     }
+
 }
 
 @Composable
@@ -287,7 +314,6 @@ fun EditToDo() {
             maxLines = 2
 
         )
-
     }
 
     Divider(
@@ -296,6 +322,7 @@ fun EditToDo() {
             .height(0.5.dp),
         color = Color.LightGray
     )
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
