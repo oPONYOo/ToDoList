@@ -20,17 +20,23 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.ArrowDropUp
+import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester.Companion.createRefs
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.consumePositionChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
@@ -45,22 +51,23 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.view.WindowCompat
 import com.example.todolist.data.ToDoViewModel
 import com.example.todolist.ui.LandingScreen
 import com.example.todolist.ui.ToDoTabBar
 import com.example.todolist.ui.ToDoTabs
-import com.example.todolist.ui.theme.ToDoListTheme
-import com.example.todolist.ui.theme.gray1
-import com.google.accompanist.insets.statusBarsPadding
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 import kotlin.math.roundToInt
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.todolist.data.Todo
-import com.example.todolist.ui.theme.lime
+import com.example.todolist.data.TodoThingsModel
+import com.example.todolist.ui.theme.*
+import com.google.accompanist.insets.*
+import dagger.hilt.android.AndroidEntryPoint
 
-
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -165,8 +172,9 @@ enum class ToDoScreen {
 private fun CardContent(
     openDrawer: () -> Unit,
     modifier: Modifier = Modifier,
-//    viewModel: ToDoViewModel= viewModel()
+    viewModel: ToDoViewModel = viewModel()
 ) {
+    val todoThings by viewModel.toDoThings.observeAsState()
     val allTasks = stringArrayResource(R.array.tasks)
     val tasks = remember { mutableStateListOf(*allTasks) }
     var tabSelected by remember { mutableStateOf(ToDoScreen.TODO) }
@@ -178,16 +186,12 @@ private fun CardContent(
             HomeTabBar(openDrawer, tabSelected, onTabSelected = { tabSelected = it })
         },
         backLayerContent = {
-
-            EditToDo()
-        },
-        frontLayerContent = {
-            Image(painterResource(id = R.drawable.ic_baseline_horizontal_rule_24), contentDescription = null, modifier = Modifier.fillMaxWidth())
             when (tabSelected) {
                 ToDoScreen.TODO -> {
-                    val names: List<String> = List(10) { "compose" }
-                    LazyColumn(modifier = Modifier.padding(vertical = 4.dp)) {
-                        items(count = tasks.size) { i ->
+                    LazyColumn(modifier = Modifier
+                        .padding(vertical = 4.dp)
+                        .systemBarsPadding()) {
+                        /*items(count = tasks.size) { i ->
                             val task = tasks.getOrNull(i)
                             if (task != null) {
                                 key(task) {
@@ -198,6 +202,14 @@ private fun CardContent(
                                 }
                             }
 
+                        }*/
+                        items(count = todoThings!!.size) { i ->
+                            val task = todoThings?.getOrNull(i)
+                            if (task != null) {
+                                key(task) {
+                                    TodoList(task = task, onRemove = {})
+                                }
+                            }
                         }
 
                     }
@@ -209,6 +221,30 @@ private fun CardContent(
 
                 }
             }
+
+
+        },
+        frontLayerContent = {
+            Surface(modifier = modifier.fillMaxSize(), color = Color.Gray, shape = BottomSheetShape) {
+                Column(modifier = Modifier.padding(start = 24.dp, top = 20.dp, end = 24.dp)) {
+                    Icon(
+                        Icons.Outlined.ArrowDropUp,
+                        contentDescription = "Localized description"
+                    )
+//                    Text(
+//                        text = "위로",
+//                    )
+                    Spacer(Modifier.height(8.dp))
+                    ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
+                        ExtendedFloatingActionButtonDemo()
+                        EditToDo()
+                    }
+                }
+                }
+
+
+
+
         }
     )
 
@@ -216,15 +252,14 @@ private fun CardContent(
 }
 
 @Composable
-private fun TodoList(task: String, onRemove: () -> Unit) {
+private fun TodoList(task: TodoThingsModel, onRemove: () -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     Surface(
         modifier = Modifier
-//            .swipeToDismiss(onRemove)
             .pointerInput(Unit) {
-                detectTapGestures(onDoubleTap = { onRemove()})
+                detectTapGestures(onDoubleTap = { onRemove() })
             }
-    ){
+    ) {
         Row(
             modifier = Modifier
                 .padding(10.dp)
@@ -244,7 +279,11 @@ private fun TodoList(task: String, onRemove: () -> Unit) {
                 onCheckedChange = { checked ->
                     selectAll = checked
                 },
-                colors = CheckboxDefaults.colors(checkedColor = Color.LightGray, checkmarkColor = Color.Gray, uncheckedColor = gray1)
+                colors = CheckboxDefaults.colors(
+                    checkedColor = Color.LightGray,
+                    checkmarkColor = Color.Gray,
+                    uncheckedColor = gray1
+                )
             )
             Column(
                 modifier = Modifier
@@ -254,19 +293,21 @@ private fun TodoList(task: String, onRemove: () -> Unit) {
             ) {
                 Text(
                     modifier = Modifier,
-                    text = task,
+                    text = task.mainTodo,
                     style = MaterialTheme.typography.h5.copy(
                         fontWeight = FontWeight.Medium
                     )
                 )
                 if (expanded) {
                     Text(
-                        text = ("Composem ipsum color sit lazy, " +
-                                "padding theme elit, sed do bouncy. ").repeat(4),
+                        text = task.description,
                     )
                 }
             }
-            IconButton(onClick = { expanded = !expanded }, modifier = Modifier.padding(0.dp, 5.dp)) {
+            IconButton(
+                onClick = { expanded = !expanded },
+                modifier = Modifier.padding(0.dp, 5.dp)
+            ) {
                 Icon(
                     imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
                     contentDescription = if (expanded) {
@@ -284,17 +325,16 @@ private fun TodoList(task: String, onRemove: () -> Unit) {
 
 @Composable
 fun EditToDo() {
-    var text by remember { mutableStateOf("Hello") }
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(10.dp, 20.dp, 10.dp, 0.dp)
-            .background(Color.White, RoundedCornerShape(16.dp))
-    ) {
+    var titleTxt by remember { mutableStateOf("") }
+    var subTxt by remember { mutableStateOf("") }
+    Row(modifier = Modifier.fillMaxWidth()) {
         TextField(
-            value = text,
-            onValueChange = { text = it },
-            modifier = Modifier.fillMaxWidth(),
+            value = titleTxt,
+            onValueChange = { titleTxt = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(0.dp, 60.dp, 0.dp),
+
             textStyle = MaterialTheme.typography.h6,
             placeholder = {
                 Text(
@@ -316,9 +356,10 @@ fun EditToDo() {
         )
     }
 
+
+
     Divider(
         modifier = Modifier
-            .padding(10.dp, 0.dp, 10.dp, 0.dp)
             .height(0.5.dp),
         color = Color.LightGray
     )
@@ -326,13 +367,15 @@ fun EditToDo() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(10.dp, 0.dp, 10.dp, 10.dp)
+            .padding(0.dp, 100.dp)
             .background(Color.White, RoundedCornerShape(16.dp))
     ) {
         TextField(
-            value = text,
-            onValueChange = { text = it },
-            modifier = Modifier.fillMaxWidth().fillMaxHeight(),
+            value = subTxt,
+            onValueChange = { subTxt = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .fillMaxHeight(),
             textStyle = MaterialTheme.typography.body1,
             placeholder = {
                 Text(
@@ -350,9 +393,49 @@ fun EditToDo() {
             ),
 
             )
+
     }
+
 }
 
+
+@Composable
+fun ExtendedFloatingActionButtonDemo() {
+    Scaffold(
+        backgroundColor = Color(0xFFFEFEFA),
+        floatingActionButtonPosition = FabPosition.End,
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+
+                },
+                backgroundColor = lime,
+                contentColor = Color.Black,
+                elevation = FloatingActionButtonDefaults.elevation(6.dp)
+            ) {
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = "Localized description"
+                )
+            }
+        }
+    ){}
+    /*Scaffold(bottomBar = {
+        ExtendedFloatingActionButton(
+            modifier = Modifier
+                .navigationBarsWithImePadding()
+            ,
+            icon = { Icon(Icons.Filled.Favorite,"") },
+            text = { Text("add") },
+            onClick = { *//*do something*//* },
+            elevation = FloatingActionButtonDefaults.elevation(8.dp),
+            backgroundColor = lime,
+        )
+    },  ) {
+
+    }*/
+
+}
 
 @Composable
 private fun HomeTabBar(
@@ -388,63 +471,5 @@ fun DefaultPreview() {
     }
 }
 
-private fun Modifier.swipeToDismiss(
-    onDismissed: () -> Unit
-): Modifier = composed {
-    // This `Animatable` stores the horizontal offset for the element.
-    val offsetX = remember { Animatable(0f) }
-    pointerInput(Unit) {
-        // Used to calculate a settling position of a fling animation.
-        val decay = splineBasedDecay<Float>(this)
-        // Wrap in a coroutine scope to use suspend functions for touch events and animation.
-        coroutineScope {
-            while (true) {
-                // Wait for a touch down event.
-                val pointerId = awaitPointerEventScope { awaitFirstDown().id }
-                // Interrupt any ongoing animation.
-                offsetX.stop()
-                // Prepare for drag events and record velocity of a fling.
-                val velocityTracker = VelocityTracker()
-                // Wait for drag events.
-                awaitPointerEventScope {
-                    horizontalDrag(pointerId) { change ->
-                        // Record the position after offset
-                        val horizontalDragOffset = offsetX.value + change.positionChange().x
-                        launch {
-                            // Overwrite the `Animatable` value while the element is dragged.
-                            offsetX.snapTo(horizontalDragOffset)
-                        }
-                        // Record the velocity of the drag.
-                        velocityTracker.addPosition(change.uptimeMillis, change.position)
-                        // Consume the gesture event, not passed to external
-                        change.consumePositionChange()
-                    }
-                }
-                // Dragging finished. Calculate the velocity of the fling.
-                val velocity = velocityTracker.calculateVelocity().x
-                // Calculate where the element eventually settles after the fling animation.
-                val targetOffsetX = decay.calculateTargetValue(offsetX.value, velocity)
-                // The animation should end as soon as it reaches these bounds.
-                offsetX.updateBounds(
-                    lowerBound = -size.width.toFloat(),
-                    upperBound = size.width.toFloat()
-                )
-                launch {
-                    if (targetOffsetX.absoluteValue <= size.width) {
-                        // Not enough velocity; Slide back to the default position.
-                        offsetX.animateTo(targetValue = 0f, initialVelocity = velocity)
-                    } else {
-                        // Enough velocity to slide away the element to the edge.
-                        offsetX.animateDecay(velocity, decay)
-                        // The element was swiped away.
-                        onDismissed()
-                    }
-                }
-            }
-        }
-    }
-        // Apply the horizontal offset to the element.
-        .offset { IntOffset(offsetX.value.roundToInt(), 0) }
-}
 
 enum class SplashState { Shown, Completed }

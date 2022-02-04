@@ -18,7 +18,7 @@ class ToDoViewModel @Inject constructor(
     ): ViewModel(){
     val mianTxt: List<TodoThingsModel> = toDoRepository.todoThings
 
-    private val _toDoThings = MutableLiveData<List<TodoThingsModel>>()
+    val _toDoThings = MutableLiveData<List<TodoThingsModel>>()
     val toDoThings: LiveData<List<TodoThingsModel>>
         get() = _toDoThings
 
