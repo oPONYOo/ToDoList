@@ -1,74 +1,49 @@
 package com.example.todolist
 
+import android.app.Activity
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.VisibleForTesting
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.*
-import androidx.compose.animation.splineBasedDecay
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.horizontalDrag
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.ArrowDropUp
-import androidx.compose.material.icons.outlined.ArrowUpward
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.focus.FocusRequester.Companion.createRefs
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.onKeyEvent
-import androidx.compose.ui.input.key.type
-import androidx.compose.ui.input.pointer.consumePositionChange
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChange
-import androidx.compose.ui.input.pointer.util.VelocityTracker
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.core.view.WindowCompat
 import com.example.todolist.data.ToDoViewModel
 import com.example.todolist.ui.LandingScreen
 import com.example.todolist.ui.ToDoTabBar
 import com.example.todolist.ui.ToDoTabs
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlin.math.absoluteValue
-import kotlin.math.roundToInt
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.todolist.data.Todo
-import com.example.todolist.data.TodoThingsModel
+import com.example.todolist.data.TodoDB
 import com.example.todolist.ui.theme.*
 import com.google.accompanist.insets.*
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    lateinit var viewModel: ToDoViewModel
+    var activity = this
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -76,9 +51,18 @@ class MainActivity : ComponentActivity() {
                 MyApp()
             }
         }
+        /*viewModel = ViewModelProvider(this).get(ToDoViewModel::class.java)
+        viewModel.getRecordsObserver().observe(this, object : Observer<List<TodoDB>> {
+            override fun onChanged(t: List<TodoDB>?) {
+                Log.e("tt", "${t?.get(0)?.mainTxt}")
+
+            }
+
+        })*/
+
+
     }
 }
-
 
 @Composable
 private fun MyApp() {
@@ -89,7 +73,7 @@ private fun MyApp() {
 @VisibleForTesting
 @Composable
 fun MainScreen() {
-    Surface(color = Color.Gray) {
+    Surface() {
         val transitionState = remember { MutableTransitionState(SplashState.Shown) }
         val transition = updateTransition(transitionState, label = "splashTransition")
         val splashAlpha by transition.animateFloat(
@@ -116,7 +100,7 @@ fun MainScreen() {
             )
             Greeting(
                 modifier = Modifier.alpha(contentAlpha),
-                topPadding = contentTopPadding
+                topPadding = contentTopPadding,
             )
         }
     }
@@ -126,7 +110,7 @@ fun MainScreen() {
 @Composable
 private fun Greeting(
     modifier: Modifier = Modifier,
-    topPadding: Dp = 0.dp,
+    topPadding: Dp = 0.dp
 ) {
     Card(
         backgroundColor = Color.Transparent,
@@ -134,9 +118,7 @@ private fun Greeting(
     ) {
         Column(modifier = modifier) {
             Spacer(Modifier.padding(top = topPadding))
-            home(
-                modifier = modifier
-            )
+            home()
         }
     }
 
@@ -145,7 +127,7 @@ private fun Greeting(
 
 @Composable
 fun home(
-    modifier: Modifier = Modifier,
+
 ) {
     val scaffoldState = rememberScaffoldState()
     Scaffold(
@@ -158,7 +140,8 @@ fun home(
                 scope.launch {
                     scaffoldState.drawerState.isClosed
                 }
-            }
+            },
+            Modifier
         )
     }
 }
@@ -174,45 +157,43 @@ private fun CardContent(
     modifier: Modifier = Modifier,
     viewModel: ToDoViewModel = viewModel()
 ) {
-    val todoThings by viewModel.toDoThings.observeAsState()
-    val allTasks = stringArrayResource(R.array.tasks)
-    val tasks = remember { mutableStateListOf(*allTasks) }
-    var tabSelected by remember { mutableStateOf(ToDoScreen.TODO) }
+    val items = viewModel.todoData.observeAsState(listOf()).value
+//    val tabSelected by remember { mutableStateOf(ToDoScreen.TODO) }
     BackdropScaffold(
         modifier = modifier,
-        scaffoldState = rememberBackdropScaffoldState(BackdropValue.Concealed),
+        scaffoldState = rememberBackdropScaffoldState(BackdropValue.Revealed),
         frontLayerScrimColor = Color.Unspecified,
+        backLayerBackgroundColor = Color.Unspecified,
+        frontLayerElevation = 8.dp,
         appBar = {
-            HomeTabBar(openDrawer, tabSelected, onTabSelected = { tabSelected = it })
+//            HomeTabBar(openDrawer, tabSelected, onTabSelected = { tabSelected = it })
         },
+        persistentAppBar = false,
+        headerHeight = 120.dp,
         backLayerContent = {
-            when (tabSelected) {
-                ToDoScreen.TODO -> {
-                    LazyColumn(modifier = Modifier
-                        .padding(vertical = 4.dp)
-                        .systemBarsPadding()) {
-                        /*items(count = tasks.size) { i ->
-                            val task = tasks.getOrNull(i)
-                            if (task != null) {
-                                key(task) {
-                                    TodoList(
-                                        task = task,
-                                        onRemove = { tasks.remove(task) }
-                                    )
-                                }
-                            }
+            if (items.isEmpty()){
 
-                        }*/
-                        items(count = todoThings!!.size) { i ->
-                            val task = todoThings?.getOrNull(i)
-                            if (task != null) {
-                                key(task) {
-                                    TodoList(task = task, onRemove = {})
-                                }
+
+            }else{
+                LazyColumn(
+                    modifier = Modifier
+                        .padding(vertical = 4.dp)
+                        .systemBarsPadding()
+                ) {
+                    items(count = items!!.size) { i ->
+                        val task = items.getOrNull(i)
+                        if (task != null) {
+                            key(task.id) {
+                                TodoList(task = task)
                             }
                         }
-
                     }
+
+                }
+            }
+            /*when (tabSelected) {
+                ToDoScreen.TODO -> {
+
                 }
                 ToDoScreen.Sleep -> {
 
@@ -220,29 +201,36 @@ private fun CardContent(
                 ToDoScreen.Eat -> {
 
                 }
-            }
+            }*/
 
 
         },
         frontLayerContent = {
-            Surface(modifier = modifier.fillMaxSize(), color = Color.Gray, shape = BottomSheetShape) {
-                Column(modifier = Modifier.padding(start = 24.dp, top = 20.dp, end = 24.dp)) {
-                    Icon(
-                        Icons.Outlined.ArrowDropUp,
-                        contentDescription = "Localized description"
-                    )
-//                    Text(
-//                        text = "위로",
-//                    )
-                    Spacer(Modifier.height(8.dp))
-                    ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
-                        ExtendedFloatingActionButtonDemo()
-                        EditToDo()
+            ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
+                EditToDo()
+            }
+
+            /*Surface(
+                modifier = modifier.fillMaxSize(),
+                color = Color.Gray,
+                shape = BottomSheetShape
+            ) {
+                Column(modifier = Modifier.padding(top = 20.dp)) {
+                    Row(modifier = Modifier.align(Alignment.CenterHorizontally),
+                    ){
+                        Icon(
+                            Icons.Outlined.Edit,
+                            contentDescription = "Localized description"
+                        )
+                        Spacer(modifier = Modifier.padding(start = 4.dp))
+                        Text(
+                            text = "작성하기"
+                        )
                     }
                 }
-                }
+                Spacer(modifier = Modifier.padding(top = 50.dp))
 
-
+            }*/
 
 
         }
@@ -252,12 +240,15 @@ private fun CardContent(
 }
 
 @Composable
-private fun TodoList(task: TodoThingsModel, onRemove: () -> Unit) {
+private fun TodoList(task: TodoDB?, viewModel: ToDoViewModel = viewModel()) {
     var expanded by remember { mutableStateOf(false) }
     Surface(
         modifier = Modifier
             .pointerInput(Unit) {
-                detectTapGestures(onDoubleTap = { onRemove() })
+                detectTapGestures(onLongPress = {
+                    task?.let { it1 -> viewModel.deleteRecord(it1) }
+                    viewModel.loadRecords()
+                })
             }
     ) {
         Row(
@@ -291,17 +282,21 @@ private fun TodoList(task: TodoThingsModel, onRemove: () -> Unit) {
                     .padding(12.dp)
 
             ) {
-                Text(
-                    modifier = Modifier,
-                    text = task.mainTodo,
-                    style = MaterialTheme.typography.h5.copy(
-                        fontWeight = FontWeight.Medium
-                    )
-                )
-                if (expanded) {
+                task?.mainTxt?.let {
                     Text(
-                        text = task.description,
+                        modifier = Modifier,
+                        text = it,
+                        style = MaterialTheme.typography.h5.copy(
+                            fontWeight = FontWeight.Medium
+                        )
                     )
+                }
+                if (expanded) {
+                    task?.subTxt?.let {
+                        Text(
+                            text = it,
+                        )
+                    }
                 }
             }
             IconButton(
@@ -324,89 +319,100 @@ private fun TodoList(task: TodoThingsModel, onRemove: () -> Unit) {
 }
 
 @Composable
-fun EditToDo() {
+fun EditToDo(viewModel: ToDoViewModel = viewModel()) {
     var titleTxt by remember { mutableStateOf("") }
     var subTxt by remember { mutableStateOf("") }
-    Row(modifier = Modifier.fillMaxWidth()) {
-        TextField(
-            value = titleTxt,
-            onValueChange = { titleTxt = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(0.dp, 60.dp, 0.dp),
+    Column() {
+        Row {
+            //state Hoisting(상태 끌어올리기) compose 내부에서 상태를 저장해야할 때 많이 사용, 자식 Composable의 state를 호출부로 끌어올리는 것을 뜻함.
+            //구조 분해 사용 val (textState, setTextState) = mutableStateOf("") TextField(value = textState, onValueChange = setTextState)
+            //by 사용(Delegation 사용) o
+            TextField(
+                value = titleTxt,
+                onValueChange = { textValue -> titleTxt = textValue },
+                modifier = Modifier
+                    .width(720.dp)
+                    .padding(start = 10.dp),
+                textStyle = MaterialTheme.typography.h6,
+                placeholder = {
+                    Text(
+                        text = "제목",
+                        style = MaterialTheme.typography.h6,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.LightGray
+                    )
+                },
+                colors = TextFieldDefaults.textFieldColors(
+                    cursorColor = Color.LightGray,
+                    backgroundColor = Color.White,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent
+                ),
 
-            textStyle = MaterialTheme.typography.h6,
-            placeholder = {
-                Text(
-                    text = "제목",
-                    style = MaterialTheme.typography.h6,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.LightGray
-                )
-            },
-            colors = TextFieldDefaults.textFieldColors(
-                cursorColor = Color.LightGray,
-                backgroundColor = Color.White,
-                focusedIndicatorColor = Color.LightGray,
-                unfocusedIndicatorColor = Color.Transparent
-            ),
-
-            maxLines = 2
-
-        )
-    }
-
-
-
-    Divider(
-        modifier = Modifier
-            .height(0.5.dp),
-        color = Color.LightGray
-    )
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(0.dp, 100.dp)
-            .background(Color.White, RoundedCornerShape(16.dp))
-    ) {
-        TextField(
-            value = subTxt,
-            onValueChange = { subTxt = it },
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxHeight(),
-            textStyle = MaterialTheme.typography.body1,
-            placeholder = {
-                Text(
-                    text = "내용",
-                    style = MaterialTheme.typography.body1,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.LightGray
-                )
-            },
-            colors = TextFieldDefaults.textFieldColors(
-                cursorColor = Color.LightGray,
-                backgroundColor = Color.White,
-                focusedIndicatorColor = Color.LightGray,
-                unfocusedIndicatorColor = Color.Transparent
-            ),
+                maxLines = 2
 
             )
+            Button(
+                modifier = Modifier.padding(top = 10.dp),
+                onClick = {
+                    val todoEntity = TodoDB(mainTxt = titleTxt, subTxt = subTxt)
+                    viewModel.insertRecord(todoEntity)
+                    viewModel.loadRecords()
+                    titleTxt = ""
+                    subTxt = ""
+                },
+            ) {
+                Text("추가")
+            }
 
+        }
+        Divider(
+            modifier = Modifier
+                .height(0.5.dp),
+            color = Color.LightGray
+        )
+        Row() {
+
+            TextField(
+                value = subTxt,
+                onValueChange = { textValue -> subTxt = textValue },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight()
+                    .padding(start = 10.dp),
+                textStyle = MaterialTheme.typography.body1,
+                placeholder = {
+                    Text(
+                        text = "내용",
+                        style = MaterialTheme.typography.body1,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.LightGray
+                    )
+                },
+                colors = TextFieldDefaults.textFieldColors(
+                    cursorColor = Color.LightGray,
+                    backgroundColor = Color.White,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent
+                ),
+
+                )
+        }
     }
+
 
 }
 
 
-@Composable
-fun ExtendedFloatingActionButtonDemo() {
+/*@Composable
+fun ExtendedFloatingActionButtonDemo(title: String?, subTitle: String?, todoViewModel: ToDoViewModel) {
     Scaffold(
-        backgroundColor = Color(0xFFFEFEFA),
+        backgroundColor = Color.Transparent,
         floatingActionButtonPosition = FabPosition.End,
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
+
 
                 },
                 backgroundColor = lime,
@@ -419,23 +425,10 @@ fun ExtendedFloatingActionButtonDemo() {
                 )
             }
         }
-    ){}
-    /*Scaffold(bottomBar = {
-        ExtendedFloatingActionButton(
-            modifier = Modifier
-                .navigationBarsWithImePadding()
-            ,
-            icon = { Icon(Icons.Filled.Favorite,"") },
-            text = { Text("add") },
-            onClick = { *//*do something*//* },
-            elevation = FloatingActionButtonDefaults.elevation(8.dp),
-            backgroundColor = lime,
-        )
-    },  ) {
+    ) {}
 
-    }*/
 
-}
+}*/
 
 @Composable
 private fun HomeTabBar(
@@ -457,19 +450,19 @@ private fun HomeTabBar(
     }
 }
 
-@Preview(
-    showBackground = true,
-    widthDp = 320,
-    uiMode = UI_MODE_NIGHT_YES,
-    name = "DefaultPreviewDark"
-)
-@Preview(showBackground = true, widthDp = 320)
-@Composable
-fun DefaultPreview() {
-    ToDoListTheme {
-        MainScreen()
-    }
-}
+//@Preview(
+//    showBackground = true,
+//    widthDp = 320,
+//    uiMode = UI_MODE_NIGHT_YES,
+//    name = "DefaultPreviewDark"
+//)
+//@Preview(showBackground = true, widthDp = 320)
+//@Composable
+//fun DefaultPreview() {
+//    ToDoListTheme {
+//        MainScreen()
+//    }
+//}
 
 
 enum class SplashState { Shown, Completed }

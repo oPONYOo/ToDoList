@@ -195,7 +195,12 @@ dependencies {
     // If using insets-ui
     implementation ("com.google.accompanist:accompanist-insets-ui:0.24.1-alpha")
 
-
+// Room components
+    val roomVersion = "2.4.1"
+    implementation ("androidx.room:room-runtime:$roomVersion")
+    kapt ("androidx.room:room-compiler:$roomVersion")
+    implementation ("androidx.room:room-ktx:$roomVersion")
+    androidTestImplementation ("androidx.room:room-testing:$roomVersion")
 }
 
 apply(mapOf("plugin" to "com.google.firebase.crashlytics"))

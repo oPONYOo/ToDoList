@@ -13,10 +13,38 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ToDoViewModel @Inject constructor(
-    private val toDoRepository: TodoThingsRepository,
+    private val repository: TodoThingsRepository,
     @DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher
     ): ViewModel(){
-    val mianTxt: List<TodoThingsModel> = toDoRepository.todoThings
+
+        var todoData: MutableLiveData<List<TodoDB>> = MutableLiveData()
+
+    init {
+        loadRecords()
+        }
+
+    fun getRecordsObserver(): MutableLiveData<List<TodoDB>> {
+        return todoData
+    }
+
+    fun loadRecords(){
+        val list = repository.getRecords()
+        todoData.postValue(list)
+    }
+
+    fun insertRecord(todoEntity: TodoDB){
+        repository.insertRecords(todoEntity)
+    }
+
+    fun deleteRecord(todoEntity: TodoDB){
+        repository.deleteRecords(todoEntity)
+    }
+
+
+
+
+
+    /*val mianTxt: List<TodoThingsModel> = toDoRepository.todoThings
 
     val _toDoThings = MutableLiveData<List<TodoThingsModel>>()
     val toDoThings: LiveData<List<TodoThingsModel>>
@@ -34,5 +62,5 @@ class ToDoViewModel @Inject constructor(
             }
             _toDoThings.value = newTodoThings
         }
-    }
+    }*/
 }
