@@ -40,6 +40,10 @@ class ToDoViewModel @Inject constructor(
         repository.deleteRecords(todoEntity)
     }
 
+    fun updateRecord(todoEntity: TodoDB){
+        repository.updateRecords(todoEntity)
+    }
+
 
 
 

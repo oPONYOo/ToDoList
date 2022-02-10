@@ -8,5 +8,6 @@ import androidx.room.PrimaryKey
  class TodoDB(
     @PrimaryKey(autoGenerate = true)@ColumnInfo(name = "id") val id: Int = 0,
     @ColumnInfo(name = "mainTxt") val mainTxt: String? = null,
-    @ColumnInfo(name = "subTxt") val subTxt: String? = null
+    @ColumnInfo(name = "subTxt") val subTxt: String? = null,
+    @ColumnInfo(name = "check") val check: Boolean? = false
 )

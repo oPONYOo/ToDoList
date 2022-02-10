@@ -26,4 +26,8 @@ class TodoThingsRepository @Inject constructor(
         todoDao.deleteRecords(todoEntity)
     }
 
+    fun updateRecords(todoEntity: TodoDB){
+        todoDao.updateRecords(todoEntity)
+    }
+
 }

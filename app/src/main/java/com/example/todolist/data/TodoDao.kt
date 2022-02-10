@@ -14,9 +14,13 @@ interface TodoDao {
     @Insert
     fun insertRecords(todoEntity: TodoDB)
 
-    @Query("INSERT INTO todoList(mainTxt,subTxt)VALUES(:mainTxt,:subTxt)")
-    fun myInsertTodo(mainTxt: String?, subTxt: String?)
+    @Query("INSERT INTO todoList(mainTxt,subTxt,`check`)VALUES(:mainTxt,:subTxt,:check)")
+    fun myInsertTodo(mainTxt: String?, subTxt: String?, check: Boolean?)
 
     @Delete
     fun deleteRecords(todoEntity: TodoDB)
+
+    @Update
+    fun updateRecords(todoEntity: TodoDB)
+
 }

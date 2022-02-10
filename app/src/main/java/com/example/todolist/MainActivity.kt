@@ -1,7 +1,5 @@
 package com.example.todolist
 
-import android.app.Activity
-import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -10,23 +8,33 @@ import androidx.annotation.VisibleForTesting
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role.Companion.Image
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.todolist.data.ToDoViewModel
@@ -39,6 +47,8 @@ import com.example.todolist.ui.theme.*
 import com.google.accompanist.insets.*
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.todolist.data.Todo
+import kotlin.math.ceil
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -157,7 +167,7 @@ private fun CardContent(
     modifier: Modifier = Modifier,
     viewModel: ToDoViewModel = viewModel()
 ) {
-    val items = viewModel.todoData.observeAsState(listOf()).value
+    val items by viewModel.todoData.observeAsState(listOf())//State를 선언할 때는 by를 통해 사용(delegation)
 //    val tabSelected by remember { mutableStateOf(ToDoScreen.TODO) }
     BackdropScaffold(
         modifier = modifier,
@@ -171,25 +181,23 @@ private fun CardContent(
         persistentAppBar = false,
         headerHeight = 120.dp,
         backLayerContent = {
-            if (items.isEmpty()){
-
-
-            }else{
-                LazyColumn(
-                    modifier = Modifier
-                        .padding(vertical = 4.dp)
-                        .systemBarsPadding()
-                ) {
-                    items(count = items!!.size) { i ->
-                        val task = items.getOrNull(i)
-                        if (task != null) {
-                            key(task.id) {
-                                TodoList(task = task)
-                            }
+            if (items.isEmpty()) {
+                EmptyScreen()
+            } else {
+                Column {
+                    AnimationGaugeBar(5, Color.Black, items)
+                    LazyColumn(
+                        modifier = Modifier
+                            .padding(vertical = 4.dp)
+                            .systemBarsPadding()
+                    ) {
+                        items(items, key = {task -> task.id}) { task ->
+                            TodoList(task)
                         }
-                    }
 
+                    }
                 }
+
             }
             /*when (tabSelected) {
                 ToDoScreen.TODO -> {
@@ -209,30 +217,6 @@ private fun CardContent(
             ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
                 EditToDo()
             }
-
-            /*Surface(
-                modifier = modifier.fillMaxSize(),
-                color = Color.Gray,
-                shape = BottomSheetShape
-            ) {
-                Column(modifier = Modifier.padding(top = 20.dp)) {
-                    Row(modifier = Modifier.align(Alignment.CenterHorizontally),
-                    ){
-                        Icon(
-                            Icons.Outlined.Edit,
-                            contentDescription = "Localized description"
-                        )
-                        Spacer(modifier = Modifier.padding(start = 4.dp))
-                        Text(
-                            text = "작성하기"
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.padding(top = 50.dp))
-
-            }*/
-
-
         }
     )
 
@@ -263,12 +247,15 @@ private fun TodoList(task: TodoDB?, viewModel: ToDoViewModel = viewModel()) {
                 .border(BorderStroke(2.dp, gray1), RoundedCornerShape(16.dp))
                 .background(Color.White, RoundedCornerShape(16.dp))
         ) {
-            var selectAll by remember { mutableStateOf(false) }
+//            var selectAll by remember { mutableStateOf(task!!.check) }
             Checkbox(
                 modifier = Modifier.padding(0.dp, 7.dp),
-                checked = selectAll,
+                checked = task!!.check!!,
                 onCheckedChange = { checked ->
-                    selectAll = checked
+                    val todoEntity =
+                        TodoDB(mainTxt = task.mainTxt, subTxt = task.subTxt, check = checked)
+                    viewModel.updateRecord(todoEntity)
+                    viewModel.loadRecords()
                 },
                 colors = CheckboxDefaults.colors(
                     checkedColor = Color.LightGray,
@@ -282,7 +269,7 @@ private fun TodoList(task: TodoDB?, viewModel: ToDoViewModel = viewModel()) {
                     .padding(12.dp)
 
             ) {
-                task?.mainTxt?.let {
+                task.mainTxt?.let {
                     Text(
                         modifier = Modifier,
                         text = it,
@@ -292,7 +279,7 @@ private fun TodoList(task: TodoDB?, viewModel: ToDoViewModel = viewModel()) {
                     )
                 }
                 if (expanded) {
-                    task?.subTxt?.let {
+                    task.subTxt?.let {
                         Text(
                             text = it,
                         )
@@ -331,7 +318,7 @@ fun EditToDo(viewModel: ToDoViewModel = viewModel()) {
                 value = titleTxt,
                 onValueChange = { textValue -> titleTxt = textValue },
                 modifier = Modifier
-                    .width(720.dp)
+                    .fillMaxWidth(0.9f)
                     .padding(start = 10.dp),
                 textStyle = MaterialTheme.typography.h6,
                 placeholder = {
@@ -355,14 +342,14 @@ fun EditToDo(viewModel: ToDoViewModel = viewModel()) {
             Button(
                 modifier = Modifier.padding(top = 10.dp),
                 onClick = {
-                    val todoEntity = TodoDB(mainTxt = titleTxt, subTxt = subTxt)
+                    val todoEntity = TodoDB(mainTxt = titleTxt, subTxt = subTxt, check = false)
                     viewModel.insertRecord(todoEntity)
                     viewModel.loadRecords()
                     titleTxt = ""
                     subTxt = ""
                 },
             ) {
-                Text("추가")
+                Text("추가", fontFamily = FontFamily.Monospace)
             }
 
         }
@@ -399,6 +386,82 @@ fun EditToDo(viewModel: ToDoViewModel = viewModel()) {
                 )
         }
     }
+
+
+}
+
+@Composable
+fun AnimationGaugeBar(
+    value: Int, // 표시할 값
+    color: Color, // 게이지바의 색
+    task: List<TodoDB>?
+
+) {
+    var animationPlayed by remember { //애니메이션 트리거를 위한 boolean 값
+        mutableStateOf(false)
+    }
+    val checkValue = ceil(((value / task!!.size.toDouble())) * 100).toInt()
+    val curValue = animateIntAsState(
+        targetValue = if (animationPlayed) checkValue else 0,
+        animationSpec = tween(
+            durationMillis = 2000,
+            delayMillis = 0
+        )
+    )
+    LaunchedEffect(key1 = true) {
+        animationPlayed = true
+    }
+    if (task.size == value) {
+        Text(
+            text = "목표를 모두 달성했어요!",
+            fontFamily = FontFamily.Monospace,
+            modifier = Modifier.padding(start = 5.dp)
+        )
+    } else {
+        Text(
+            text = "목표 ${task.size}개 중에 ${value}개를 달성했어요!",
+            fontFamily = FontFamily.Monospace,
+            modifier = Modifier.padding(start = 5.dp)
+        )
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(10.dp)
+            .clip(CircleShape)
+            .background(Color.LightGray)
+
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxHeight()
+                .fillMaxWidth(curValue.value / 100f)
+                .clip(CircleShape)
+                .background(color = color)
+                .padding(8.dp)
+        ) {
+        }
+    }
+}
+
+@Composable
+fun EmptyScreen() {
+    Column( verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+        Row() {
+            Image(
+                painter = painterResource(R.drawable.checklist),
+                contentDescription = "Content description for visually impaired",
+                modifier = Modifier.fillMaxWidth().fillMaxHeight(0.3f)
+            )
+        }
+        Row() {
+            Text(text = "체크리스트를 통해 목표를 달성하세요!",
+                fontFamily = FontFamily.Monospace)
+        }
+
+
+    }
+
 
 
 }
@@ -450,19 +513,24 @@ private fun HomeTabBar(
     }
 }
 
-//@Preview(
-//    showBackground = true,
-//    widthDp = 320,
-//    uiMode = UI_MODE_NIGHT_YES,
-//    name = "DefaultPreviewDark"
-//)
-//@Preview(showBackground = true, widthDp = 320)
-//@Composable
-//fun DefaultPreview() {
-//    ToDoListTheme {
-//        MainScreen()
-//    }
-//}
+/*@Preview(
+    showBackground = true,
+    widthDp = 320,
+    uiMode = UI_MODE_NIGHT_YES,
+    name = "DefaultPreviewDark"
+)
+@Preview(showBackground = true, widthDp = 320)
+@Composable
+fun DefaultPreview() {
+    ToDoListTheme {
+        MainScreen()
+    }
+}*/
 
+@Preview
+@Composable
+fun pre(){
+    EmptyScreen()
+}
 
 enum class SplashState { Shown, Completed }
