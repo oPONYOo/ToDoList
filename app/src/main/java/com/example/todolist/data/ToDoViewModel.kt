@@ -1,70 +1,29 @@
 package com.example.todolist.data
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import com.example.todolist.di.DefaultDispatcher
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 
 @HiltViewModel
 class ToDoViewModel @Inject constructor(
-    private val repository: TodoThingsRepository,
-    @DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher
-    ): ViewModel(){
+    private val repository: TodoThingsRepository
+) : ViewModel() {
 
-        var todoData: MutableLiveData<List<TodoDB>> = MutableLiveData()
+    var todoData : Flow<List<TodoDB>> = repository.todoThings
 
-    init {
-        loadRecords()
-        }
 
-    fun getRecordsObserver(): MutableLiveData<List<TodoDB>> {
-        return todoData
-    }
-
-    fun loadRecords(){
-        val list = repository.getRecords()
-        todoData.postValue(list)
-    }
-
-    fun insertRecord(todoEntity: TodoDB){
+    fun insertRecord(todoEntity: TodoDB) {
         repository.insertRecords(todoEntity)
     }
 
-    fun deleteRecord(todoEntity: TodoDB){
+    fun deleteRecord(todoEntity: TodoDB) {
         repository.deleteRecords(todoEntity)
     }
 
-    fun updateRecord(todoEntity: TodoDB){
+    fun updateRecord(todoEntity: TodoDB) {
         repository.updateRecords(todoEntity)
     }
 
 
-
-
-
-    /*val mianTxt: List<TodoThingsModel> = toDoRepository.todoThings
-
-    val _toDoThings = MutableLiveData<List<TodoThingsModel>>()
-    val toDoThings: LiveData<List<TodoThingsModel>>
-        get() = _toDoThings
-
-    init {
-        _toDoThings.value = toDoRepository.todoThings
-    }
-
-    fun toDoThingsChanged(newToDo: String) {
-        viewModelScope.launch {
-            val newTodoThings = withContext(defaultDispatcher) {
-                toDoRepository.todoThings
-                    .filter { it.mainTodo.contains(newToDo) }
-            }
-            _toDoThings.value = newTodoThings
-        }
-    }*/
 }

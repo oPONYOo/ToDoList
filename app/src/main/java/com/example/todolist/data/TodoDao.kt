@@ -1,12 +1,13 @@
 package com.example.todolist.data
 
 import androidx.room.*
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TodoDao {
 
     @Query("SELECT * FROM todoList ORDER BY id DESC")
-    fun getRecords(): List<TodoDB>
+    fun getRecords(): Flow<List<TodoDB>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertTodoThings(vararg todoList: TodoDB)

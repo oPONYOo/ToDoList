@@ -1,12 +1,14 @@
 package com.example.todolist.data
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 
 class TodoThingsRepository @Inject constructor(
     private val todoDao: TodoDao
 //    private val todoThingsLocalDataSource: TodoThingsLocalDataSource
 ) {
-//    val todoThings: List<TodoThingsModel> = todoThingsLocalDataSource.todoThings
+    val todoThings: Flow<List<TodoDB>> = todoDao.getRecords()
 
     /*fun getToDoThings(mainTxt: String): TodoThingsModel? {
         return todoThingsLocalDataSource.todoThings.firstOrNull {
@@ -14,9 +16,11 @@ class TodoThingsRepository @Inject constructor(
         }
     }*/
 
-    fun getRecords(): List<TodoDB> {
+    fun getRecords(): Flow<List<TodoDB>> {
         return todoDao.getRecords()
     }
+
+//    suspend fun getRecords() = todoDao.getRecords()
 
     fun insertRecords(todoEntity: TodoDB) {
         todoDao.insertRecords(todoEntity)

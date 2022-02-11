@@ -21,8 +21,6 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -31,7 +29,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role.Companion.Image
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -39,15 +36,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.todolist.data.ToDoViewModel
 import com.example.todolist.ui.LandingScreen
-import com.example.todolist.ui.ToDoTabBar
-import com.example.todolist.ui.ToDoTabs
-import kotlinx.coroutines.launch
 import com.example.todolist.data.TodoDB
 import com.example.todolist.ui.theme.*
 import com.google.accompanist.insets.*
 import dagger.hilt.android.AndroidEntryPoint
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.todolist.data.Todo
 import kotlin.math.ceil
 
 @AndroidEntryPoint
@@ -61,16 +54,6 @@ class MainActivity : ComponentActivity() {
                 MyApp()
             }
         }
-        /*viewModel = ViewModelProvider(this).get(ToDoViewModel::class.java)
-        viewModel.getRecordsObserver().observe(this, object : Observer<List<TodoDB>> {
-            override fun onChanged(t: List<TodoDB>?) {
-                Log.e("tt", "${t?.get(0)?.mainTxt}")
-
-            }
-
-        })*/
-
-
     }
 }
 
@@ -83,7 +66,7 @@ private fun MyApp() {
 @VisibleForTesting
 @Composable
 fun MainScreen() {
-    Surface() {
+    Surface {
         val transitionState = remember { MutableTransitionState(SplashState.Shown) }
         val transition = updateTransition(transitionState, label = "splashTransition")
         val splashAlpha by transition.animateFloat(
@@ -128,7 +111,7 @@ private fun Greeting(
     ) {
         Column(modifier = modifier) {
             Spacer(Modifier.padding(top = topPadding))
-            home()
+            Home()
         }
     }
 
@@ -136,21 +119,20 @@ private fun Greeting(
 }
 
 @Composable
-fun home(
-
+fun Home(
 ) {
     val scaffoldState = rememberScaffoldState()
     Scaffold(
         scaffoldState = scaffoldState,
         modifier = Modifier.statusBarsPadding()
     ) {
-        val scope = rememberCoroutineScope()
+//        val scope = rememberCoroutineScope()
         CardContent(
-            openDrawer = {
-                scope.launch {
-                    scaffoldState.drawerState.isClosed
-                }
-            },
+//            openDrawer = {
+//                scope.launch {
+//                    scaffoldState.drawerState.isClosed
+//                }
+//            },
             Modifier
         )
     }
@@ -163,11 +145,13 @@ enum class ToDoScreen {
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
 private fun CardContent(
-    openDrawer: () -> Unit,
+//    openDrawer: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ToDoViewModel = viewModel()
 ) {
-    val items by viewModel.todoData.observeAsState(listOf())//State를 선언할 때는 by를 통해 사용(delegation)
+//    val items by viewModel.todoData.observeAsState(listOf())
+    val items by viewModel.todoData.collectAsState(listOf())//liveData -> Flow(플랫폼 의존성 다운)
+    //State를 선언할 때는 by를 통해 사용(delegation)
 //    val tabSelected by remember { mutableStateOf(ToDoScreen.TODO) }
     BackdropScaffold(
         modifier = modifier,
@@ -185,13 +169,13 @@ private fun CardContent(
                 EmptyScreen()
             } else {
                 Column {
-                    AnimationGaugeBar(5, Color.Black, items)
+                    AnimationGaugeBar(3, Color.Black, items)
                     LazyColumn(
                         modifier = Modifier
                             .padding(vertical = 4.dp)
                             .systemBarsPadding()
                     ) {
-                        items(items, key = {task -> task.id}) { task ->
+                        items(items, key = { task -> task.id }) { task ->
                             TodoList(task)
                         }
 
@@ -199,17 +183,6 @@ private fun CardContent(
                 }
 
             }
-            /*when (tabSelected) {
-                ToDoScreen.TODO -> {
-
-                }
-                ToDoScreen.Sleep -> {
-
-                }
-                ToDoScreen.Eat -> {
-
-                }
-            }*/
 
 
         },
@@ -231,7 +204,6 @@ private fun TodoList(task: TodoDB?, viewModel: ToDoViewModel = viewModel()) {
             .pointerInput(Unit) {
                 detectTapGestures(onLongPress = {
                     task?.let { it1 -> viewModel.deleteRecord(it1) }
-                    viewModel.loadRecords()
                 })
             }
     ) {
@@ -247,15 +219,15 @@ private fun TodoList(task: TodoDB?, viewModel: ToDoViewModel = viewModel()) {
                 .border(BorderStroke(2.dp, gray1), RoundedCornerShape(16.dp))
                 .background(Color.White, RoundedCornerShape(16.dp))
         ) {
-//            var selectAll by remember { mutableStateOf(task!!.check) }
             Checkbox(
                 modifier = Modifier.padding(0.dp, 7.dp),
                 checked = task!!.check!!,
                 onCheckedChange = { checked ->
+                    Log.e("checked",  "$checked")
                     val todoEntity =
                         TodoDB(mainTxt = task.mainTxt, subTxt = task.subTxt, check = checked)
+
                     viewModel.updateRecord(todoEntity)
-                    viewModel.loadRecords()
                 },
                 colors = CheckboxDefaults.colors(
                     checkedColor = Color.LightGray,
@@ -309,7 +281,7 @@ private fun TodoList(task: TodoDB?, viewModel: ToDoViewModel = viewModel()) {
 fun EditToDo(viewModel: ToDoViewModel = viewModel()) {
     var titleTxt by remember { mutableStateOf("") }
     var subTxt by remember { mutableStateOf("") }
-    Column() {
+    Column {
         Row {
             //state Hoisting(상태 끌어올리기) compose 내부에서 상태를 저장해야할 때 많이 사용, 자식 Composable의 state를 호출부로 끌어올리는 것을 뜻함.
             //구조 분해 사용 val (textState, setTextState) = mutableStateOf("") TextField(value = textState, onValueChange = setTextState)
@@ -344,7 +316,7 @@ fun EditToDo(viewModel: ToDoViewModel = viewModel()) {
                 onClick = {
                     val todoEntity = TodoDB(mainTxt = titleTxt, subTxt = subTxt, check = false)
                     viewModel.insertRecord(todoEntity)
-                    viewModel.loadRecords()
+
                     titleTxt = ""
                     subTxt = ""
                 },
@@ -358,7 +330,7 @@ fun EditToDo(viewModel: ToDoViewModel = viewModel()) {
                 .height(0.5.dp),
             color = Color.LightGray
         )
-        Row() {
+        Row {
 
             TextField(
                 value = subTxt,
@@ -411,18 +383,28 @@ fun AnimationGaugeBar(
     LaunchedEffect(key1 = true) {
         animationPlayed = true
     }
-    if (task.size == value) {
-        Text(
-            text = "목표를 모두 달성했어요!",
-            fontFamily = FontFamily.Monospace,
-            modifier = Modifier.padding(start = 5.dp)
-        )
-    } else {
-        Text(
-            text = "목표 ${task.size}개 중에 ${value}개를 달성했어요!",
-            fontFamily = FontFamily.Monospace,
-            modifier = Modifier.padding(start = 5.dp)
-        )
+    when {
+        task.size == value -> {
+            Text(
+                text = "목표를 모두 달성했어요!",
+                fontFamily = FontFamily.Monospace,
+                modifier = Modifier.padding(start = 5.dp)
+            )
+        }
+        value == 0 -> {
+            Text(
+                text = "달성해야 할 목표가 ${task.size}개 남았어요!",
+                fontFamily = FontFamily.Monospace,
+                modifier = Modifier.padding(start = 5.dp)
+            )
+        }
+        else -> {
+            Text(
+                text = "목표 ${task.size}개 중에 ${value}개를 달성했어요!",
+                fontFamily = FontFamily.Monospace,
+                modifier = Modifier.padding(start = 5.dp)
+            )
+        }
     }
     Box(
         modifier = Modifier
@@ -446,22 +428,28 @@ fun AnimationGaugeBar(
 
 @Composable
 fun EmptyScreen() {
-    Column( verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-        Row() {
+    Column(
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Row {
             Image(
                 painter = painterResource(R.drawable.checklist),
                 contentDescription = "Content description for visually impaired",
-                modifier = Modifier.fillMaxWidth().fillMaxHeight(0.3f)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.3f)
             )
         }
-        Row() {
-            Text(text = "체크리스트를 통해 목표를 달성하세요!",
-                fontFamily = FontFamily.Monospace)
+        Row {
+            Text(
+                text = "체크리스트를 통해 목표를 달성하세요!",
+                fontFamily = FontFamily.Monospace
+            )
         }
 
 
     }
-
 
 
 }
@@ -493,7 +481,7 @@ fun ExtendedFloatingActionButtonDemo(title: String?, subTitle: String?, todoView
 
 }*/
 
-@Composable
+/*@Composable
 private fun HomeTabBar(
     openDrawer: () -> Unit,
     tabSelected: ToDoScreen,
@@ -511,7 +499,7 @@ private fun HomeTabBar(
             onTabSelected = { newTab -> onTabSelected(ToDoScreen.values()[newTab.ordinal]) }
         )
     }
-}
+}*/
 
 /*@Preview(
     showBackground = true,
@@ -529,7 +517,7 @@ fun DefaultPreview() {
 
 @Preview
 @Composable
-fun pre(){
+fun Pre() {
     EmptyScreen()
 }
 
