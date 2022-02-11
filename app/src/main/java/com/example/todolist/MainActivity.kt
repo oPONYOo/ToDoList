@@ -153,6 +153,12 @@ private fun CardContent(
     val items by viewModel.todoData.collectAsState(listOf())//liveData -> Flow(플랫폼 의존성 다운)
     //State를 선언할 때는 by를 통해 사용(delegation)
 //    val tabSelected by remember { mutableStateOf(ToDoScreen.TODO) }
+    var checkNum =0
+    for (i in items.indices){
+        if (items[i].check == true){
+            checkNum++
+        }
+    }
     BackdropScaffold(
         modifier = modifier,
         scaffoldState = rememberBackdropScaffoldState(BackdropValue.Revealed),
@@ -169,7 +175,7 @@ private fun CardContent(
                 EmptyScreen()
             } else {
                 Column {
-                    AnimationGaugeBar(3, Color.Black, items)
+                    AnimationGaugeBar(checkNum, Color.Black, items)
                     LazyColumn(
                         modifier = Modifier
                             .padding(vertical = 4.dp)
@@ -225,8 +231,7 @@ private fun TodoList(task: TodoDB?, viewModel: ToDoViewModel = viewModel()) {
                 onCheckedChange = { checked ->
                     Log.e("checked",  "$checked")
                     val todoEntity =
-                        TodoDB(mainTxt = task.mainTxt, subTxt = task.subTxt, check = checked)
-
+                        TodoDB(id = task.id, mainTxt = task.mainTxt, subTxt = task.subTxt, check = checked)
                     viewModel.updateRecord(todoEntity)
                 },
                 colors = CheckboxDefaults.colors(
@@ -290,7 +295,7 @@ fun EditToDo(viewModel: ToDoViewModel = viewModel()) {
                 value = titleTxt,
                 onValueChange = { textValue -> titleTxt = textValue },
                 modifier = Modifier
-                    .fillMaxWidth(0.9f)
+                    .fillMaxWidth(0.8f)
                     .padding(start = 10.dp),
                 textStyle = MaterialTheme.typography.h6,
                 placeholder = {
@@ -393,14 +398,14 @@ fun AnimationGaugeBar(
         }
         value == 0 -> {
             Text(
-                text = "달성해야 할 목표가 ${task.size}개 남았어요!",
+                text = "달성할 목표가 ${task.size}개 남았어요!",
                 fontFamily = FontFamily.Monospace,
                 modifier = Modifier.padding(start = 5.dp)
             )
         }
         else -> {
             Text(
-                text = "목표 ${task.size}개 중에 ${value}개를 달성했어요!",
+                text = "목표 ${task.size}개 중 ${value}개를 달성했어요!",
                 fontFamily = FontFamily.Monospace,
                 modifier = Modifier.padding(start = 5.dp)
             )
