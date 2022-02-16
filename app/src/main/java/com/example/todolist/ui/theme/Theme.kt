@@ -11,7 +11,7 @@ import androidx.compose.ui.unit.dp
 
 private val DarkColorPalette = darkColors(
     surface = Color.Black,
-    onSurface = Color.DarkGray,
+    onSurface = gray1,
     primary = gray1,
     onPrimary = Color.DarkGray
 )
@@ -21,13 +21,6 @@ private val LightColorPalette = lightColors(
     onSurface = Color.Black,
     primary = Color.LightGray,
     onPrimary = Navy
-)
-
-val BottomSheetShape = RoundedCornerShape(
-    topStart = 20.dp,
-    topEnd = 20.dp,
-    bottomStart = 0.dp,
-    bottomEnd = 0.dp
 )
 
 

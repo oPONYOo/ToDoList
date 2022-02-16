@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -175,7 +176,7 @@ private fun CardContent(
                 EmptyScreen()
             } else {
                 Column {
-                    AnimationGaugeBar(checkNum, Color.Black, items)
+                    AnimationGaugeBar(checkNum, Color.DarkGray, items)
                     LazyColumn(
                         modifier = Modifier
                             .padding(vertical = 4.dp)
@@ -223,7 +224,7 @@ private fun TodoList(task: TodoDB?, viewModel: ToDoViewModel = viewModel()) {
                     )
                 )
                 .border(BorderStroke(2.dp, gray1), RoundedCornerShape(16.dp))
-                .background(Color.White, RoundedCornerShape(16.dp))
+                .background(Color.Transparent, RoundedCornerShape(16.dp))
         ) {
             Checkbox(
                 modifier = Modifier.padding(0.dp, 7.dp),
@@ -308,7 +309,7 @@ fun EditToDo(viewModel: ToDoViewModel = viewModel()) {
                 },
                 colors = TextFieldDefaults.textFieldColors(
                     cursorColor = Color.LightGray,
-                    backgroundColor = Color.White,
+                    backgroundColor = Color.Transparent,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent
                 ),
@@ -355,7 +356,7 @@ fun EditToDo(viewModel: ToDoViewModel = viewModel()) {
                 },
                 colors = TextFieldDefaults.textFieldColors(
                     cursorColor = Color.LightGray,
-                    backgroundColor = Color.White,
+                    backgroundColor = Color.Transparent,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent
                 ),
