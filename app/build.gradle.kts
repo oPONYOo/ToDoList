@@ -156,37 +156,37 @@ dependencies {
 // Integration with activities
     implementation ("androidx.activity:activity-compose:1.4.0")
     // Compose Material Design
-    implementation ("androidx.compose.material:material:1.0.5")
+    implementation ("androidx.compose.material:material:1.1.0")
     // Animations
-    implementation ("androidx.compose.animation:animation:1.0.5")
+    implementation ("androidx.compose.animation:animation:1.1.0")
     // Tooling support (Previews, etc.)
-    implementation ("androidx.compose.ui:ui-tooling:1.0.5")
+    implementation ("androidx.compose.ui:ui-tooling:1.1.0")
     // Integration with ViewModels
-    implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.4.0")
+    implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.4.1")
     // UI Tests
-    androidTestImplementation ("androidx.compose.ui:ui-test-junit4:1.0.5")
+    androidTestImplementation ("androidx.compose.ui:ui-test-junit4:1.1.0")
 
 
-    implementation("androidx.compose.ui:ui:1.0.5")
+    implementation("androidx.compose.ui:ui:1.1.0")
     // Tooling support (Previews, etc.)
-    implementation("androidx.compose.ui:ui-tooling:1.0.5")
+    implementation("androidx.compose.ui:ui-tooling:1.1.0")
     // Foundation (Border, Background, Box, Image, Scroll, shapes, animations, etc.)
-    implementation("androidx.compose.foundation:foundation:1.0.5")
+    implementation("androidx.compose.foundation:foundation:1.1.0")
     // Material Design
-    implementation("androidx.compose.material:material:1.0.5")
+    implementation("androidx.compose.material:material:1.1.0")
     // Material design icons
-    implementation("androidx.compose.material:material-icons-core:1.0.5")
-    implementation("androidx.compose.material:material-icons-extended:1.0.5")
+    implementation("androidx.compose.material:material-icons-core:1.1.0")
+    implementation("androidx.compose.material:material-icons-extended:1.1.0")
     // Integration with observables
-    implementation("androidx.compose.runtime:runtime-livedata:1.0.5")
-    implementation("androidx.compose.runtime:runtime-rxjava2:1.0.5")
+    implementation("androidx.compose.runtime:runtime-livedata:1.1.0")
+    implementation("androidx.compose.runtime:runtime-rxjava2:1.1.0")
 
     // UI Tests
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.0.5")
 
 
     // When using a MDC theme
-    implementation("com.google.android.material:compose-theme-adapter:1.1.3")
+    implementation("com.google.android.material:compose-theme-adapter:1.1.4")
 
     // When using a AppCompat theme
     implementation("com.google.accompanist:accompanist-appcompat-theme:0.16.0")
