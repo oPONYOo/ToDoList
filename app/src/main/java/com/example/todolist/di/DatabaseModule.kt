@@ -17,11 +17,8 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-class DispatchersModule {
+object DatabaseModule {
 
-    @Provides
-    @DefaultDispatcher
-    fun provideDefaultDispatcher(): CoroutineDispatcher = Dispatchers.Default
 
     @Singleton
     @Provides
@@ -37,6 +34,3 @@ class DispatchersModule {
 
 }
 
-@Retention(AnnotationRetention.BINARY)
-@Qualifier
-annotation class DefaultDispatcher
